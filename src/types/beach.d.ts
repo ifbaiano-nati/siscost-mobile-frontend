@@ -82,5 +82,10 @@ export interface IBeachEvaluation {
   updated_at: string;
   json_data: any;
   id_user: number;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+  };
 }
 

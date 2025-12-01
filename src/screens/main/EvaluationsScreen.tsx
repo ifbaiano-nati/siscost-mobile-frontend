@@ -27,32 +27,36 @@ export default function EvaluationsScreen() {
     setRefreshing(false);
   };
 
-  const renderEvaluationItem = ({ item }: { item: IBeachEvaluation }) => (
-    <TouchableOpacity style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.evaluatorName}>{item.id_user.toString()}</Text>
-        <Text style={styles.evaluationDate}>
-          {format(new Date(item.created_at), "dd 'de' MMMM, yyyy", { locale: ptBR })}
-        </Text>
-      </View>
-      <View style={styles.cardBody}>
-        <Text style={styles.methodologyName}>
-          {getMethodologyById(item.id_metodologie)?.des_name || 'Sem metodologia'}
-        </Text>
-        <View style={styles.ratingContainer}>
-          <Text style={styles.ratingLabel}>Nota: </Text>
-          <Text style={styles.ratingValue}>{item.vl_value.toFixed(1)}</Text>
-        </View>
-      </View>
-      {item.json_data && item.json_data.dimensions && item.json_data.dimensions.length > 0 && (
-        <View style={styles.dimensionsContainer}>
-          <Text style={styles.dimensionsLabel}>
-            {item.json_data?.dimensions?.length} dimensão(ões) avaliada(s)
+  const renderEvaluationItem = ({ item }: { item: IBeachEvaluation }) => {
+    return (
+      <TouchableOpacity style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.evaluatorName}>
+            {item.user?.name || `Usuário #${item.id_user}`}
+          </Text>
+          <Text style={styles.evaluationDate}>
+            {format(new Date(item.created_at), "dd 'de' MMMM, yyyy", { locale: ptBR })}
           </Text>
         </View>
-      )}
-    </TouchableOpacity>
-  );
+        <View style={styles.cardBody}>
+          <Text style={styles.methodologyName}>
+            {getMethodologyById(item.id_metodologie)?.des_name || 'Sem metodologia'}
+          </Text>
+          <View style={styles.ratingContainer}>
+            <Text style={styles.ratingLabel}>Nota: </Text>
+            <Text style={styles.ratingValue}>{item.vl_value.toFixed(1)}</Text>
+          </View>
+        </View>
+        {item.json_data && item.json_data.dimensions && item.json_data.dimensions.length > 0 && (
+          <View style={styles.dimensionsContainer}>
+            <Text style={styles.dimensionsLabel}>
+              {item.json_data?.dimensions?.length} dimensão(ões) avaliada(s)
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    )
+  };
 
   return (
     <View style={styles.container}>
