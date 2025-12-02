@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  TextInput,
 } from 'react-native';
 import { useData } from '../../contexts/DataContext';
 import { IMethodology } from '../../types/beach.d';
@@ -14,6 +15,11 @@ import { IMethodology } from '../../types/beach.d';
 export default function MethodologiesScreen() {
   const { methodologies, loading, fetchMethodologies } = useData();
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredMethodologies = methodologies.filter((methodology) => {
+    return methodology.des_name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   useEffect(() => {
     fetchMethodologies();
@@ -28,9 +34,9 @@ export default function MethodologiesScreen() {
   const renderMethodologyItem = ({ item }: { item: IMethodology }) => (
     <TouchableOpacity style={styles.card}>
       <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{item.name}</Text>
+        <Text style={styles.cardTitle}>{item.des_name}</Text>
         <Text style={styles.cardDescription} numberOfLines={3}>
-          {item.description || 'Sem descrição'}
+          {item.des_description || 'Sem descrição'}
         </Text>
       </View>
     </TouchableOpacity>
@@ -38,13 +44,21 @@ export default function MethodologiesScreen() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar metodologia..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1976d2" />
         </View>
       ) : (
         <FlatList
-          data={methodologies}
+          data={filteredMethodologies}
           renderItem={renderMethodologyItem}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
@@ -53,7 +67,9 @@ export default function MethodologiesScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Nenhuma metodologia encontrada</Text>
+              <Text style={styles.emptyText}>
+                {searchQuery ? 'Nenhuma metodologia encontrada' : 'Nenhuma metodologia cadastrada'}
+              </Text>
             </View>
           }
         />
@@ -106,6 +122,17 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#666',
+  },
+  searchContainer: {
+    padding: 15,
+  },
+  searchInput: {
+    borderWidth: 1,
+    color: '#000',
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
   },
 });
 

@@ -19,6 +19,10 @@ export default function BeachesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
+  const filteredBeaches = beaches.filter((beach) => {
+    return beach.des_name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchBeaches();
@@ -93,7 +97,7 @@ export default function BeachesScreen() {
         </View>
       ) : (
         <FlatList
-          data={beaches}
+          data={filteredBeaches}
           renderItem={renderBeachItem}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
@@ -135,7 +139,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
   },
   searchInput: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
+    color: '#000',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
     padding: 12,
     borderRadius: 8,
     fontSize: 16,

@@ -3,7 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IBeach, IBeachEvaluation, IBeachType, IMethodology } from '@/types/beach';
 
 // URL da API - garantindo que o APK sempre use esta URL
-const API_URL = 'https://siscost-backend-2i0s.onrender.com/';
+// const API_URL = 'https://siscost-backend-2i0s.onrender.com/';
+const API_URL = 'http://192.168.15.3:8000/';
 
 interface IGetBeachesResponse {
   message: string;
@@ -157,7 +158,7 @@ class ApiService {
 
   async getEvaluationById(id: number) {
     try {
-      const response = await this.api.get(`/api/evaluations/${id}`);
+      const response = await this.api.get(`/api/beach-avaliation/${id}/complete`);
       return response.data?.data || response.data || null;
     } catch (error: any) {
       console.error('Error in getEvaluationById:', error);

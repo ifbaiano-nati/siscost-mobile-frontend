@@ -7,6 +7,7 @@ import BeachesScreen from '../screens/main/BeachesScreen';
 import BeachDetailScreen from '../screens/main/BeachDetailScreen';
 import MethodologiesScreen from '../screens/main/MethodologiesScreen';
 import EvaluationsScreen from '../screens/main/EvaluationsScreen';
+import EvaluationDetailScreen from '../screens/main/EvaluationDetailScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
@@ -24,6 +25,23 @@ function BeachesStack() {
         name="BeachDetail"
         component={BeachDetailScreen}
         options={{ title: 'Detalhes da Praia' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function EvaluationsStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="EvaluationsList"
+        component={EvaluationsScreen}
+        options={{ title: 'Avaliações' }}
+      />
+      <Stack.Screen
+        name="EvaluationDetail"
+        component={EvaluationDetailScreen}
+        options={{ title: 'Detalhes da Avaliação' }}
       />
     </Stack.Navigator>
   );
@@ -74,14 +92,13 @@ export default function MainNavigator() {
       />
       <Tab.Screen
         name="Evaluations"
-        component={EvaluationsScreen}
+        component={EvaluationsStack}
         options={{
           tabBarLabel: 'Avaliações',
           tabBarIcon: ({ color, size }) => (
             <Icon name="clipboard-check" size={size} color={color} />
           ),
-          headerShown: true,
-          headerTitle: 'Avaliações',
+          headerShown: false,
         }}
       />
       <Tab.Screen

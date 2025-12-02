@@ -105,7 +105,7 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Configurações</Text>
         
-        <TouchableOpacity 
+        {/* <TouchableOpacity 
           style={styles.menuItem}
           onPress={() => handleNotAvailable('Editar Perfil')}
         >
@@ -117,7 +117,7 @@ export default function ProfileScreen() {
             <Text style={styles.menuSubtitle}>Altere suas informações pessoais</Text>
           </View>
           <Icon name="chevron-right" size={24} color="#ccc" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity 
           style={styles.menuItem}
