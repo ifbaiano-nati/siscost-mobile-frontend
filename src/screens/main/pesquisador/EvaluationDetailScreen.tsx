@@ -7,9 +7,9 @@ import {
   Animated,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useData } from '../../contexts/DataContext';
-import { api } from '../../services/api';
-import { IBeachEvaluation } from '../../types/beach.d';
+import { useData } from '../../../contexts/DataContext';
+import { api } from '../../../services/api';
+import { IBeachEvaluation } from '../../../types/beach';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 

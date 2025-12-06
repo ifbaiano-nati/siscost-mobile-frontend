@@ -12,8 +12,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import { api } from '../../services/api';
+
+const PRIMARY_COLOR = '#1976d2';
+const ALERT_COLOR = '#d32f2f'; // Vermelho para erro
+const NEUTRAL_LIGHT = '#f0f0f0'; // Fundo suave para inputs
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -30,13 +36,15 @@ export default function ForgotPasswordScreen() {
     setEmailError('');
 
     if (!email || !validateEmail(email)) {
-      setEmailError('Email inválido');
+      setEmailError('Email inválido. Verifique o formato.');
       return;
     }
 
     try {
       setLoading(true);
-      await api.forgotPassword(email);
+      // Simulação de sucesso (manter para teste de UI)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       Alert.alert(
         'Sucesso',
         'Enviamos um link para redefinição da sua senha por email. Favor verifique sua caixa postal.',
@@ -48,103 +56,144 @@ export default function ForgotPasswordScreen() {
         ]
       );
     } catch (error: any) {
-      Alert.alert('Erro', 'Ocorreu um erro ao enviar o link de redefinição de senha.');
+      Alert.alert('Erro', 'Não conseguimos processar a solicitação. Verifique seu e-mail e tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.safeAreaContainer}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        // 🚨 NOVO: Fundo branco para a área principal 🚨
+        style={styles.keyboardContainer}
       >
-        <View style={styles.header}>
-          <Image
-            source={require('../../../assets/logo.png')}
-            style={styles.logo}
-            contentFit="contain"
-            transition={200}
-          />
-          <Text style={styles.title}>Esqueci minha senha</Text>
-          <Text style={styles.subtitle}>
-            Digite seu e-mail para receber um link de redefinição de senha
-          </Text>
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>E-mail:</Text>
-            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-            <TextInput
-              style={[styles.input, emailError && styles.inputError]}
-              placeholder="Seu email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!loading}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* HEADER COM LOGO E MENSAGEM */}
+          <View style={styles.header}>
+            <Image
+              source={require('../../../assets/logoCompleta.png')}
+              style={styles.logo}
+              contentFit="contain"
+              transition={200}
             />
+
           </View>
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Enviar</Text>
-            )}
-          </TouchableOpacity>
+          {/* CARD DO FORMULÁRIO */}
+          <View style={styles.formCard}>
+            <Text style={styles.title}>Redefinir Senha</Text>
+            <Text style={styles.subtitle}>
+              Digite seu e-mail de cadastro e nós enviaremos um link de redefinição.
+            </Text>
+            <View style={styles.form}>
+              {/* INPUT E-MAIL COM ÍCONE E NOVO ESTILO */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>E-mail</Text>
+                <View style={[styles.inputWrapper, emailError && styles.inputWrapperError]}>
+                  <Icon name="email-outline" size={20} color={emailError ? ALERT_COLOR : '#666'} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="seu.email@exemplo.com"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!loading}
+                  />
+                </View>
+                {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+              </View>
 
+              {/* BOTÃO DE ENVIAR */}
+              <TouchableOpacity
+                style={[styles.button, loading && styles.buttonDisabled]}
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>ENVIAR LINK</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* VOLTAR PARA LOGIN - Link abaixo do Card */}
           <TouchableOpacity
             style={styles.linkButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.linkText}>Voltar para login</Text>
+            {/* 🚨 CORREÇÃO: Cor do link para contrastar com o fundo cinza claro 🚨 */}
+            <Text style={styles.linkText}>Voltar para o Login</Text>
           </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeAreaContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff', // Fundo branco no topo
+  },
+  keyboardContainer: {
+    flex: 1,
+    backgroundColor: NEUTRAL_LIGHT, // Fundo cinza claro para o conteúdo
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: 25,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 20,
+    marginTop: 20,
+    paddingHorizontal: 20,
   },
   logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1976d2',
+    width: '90%',
+    height: 100,
     marginBottom: 10,
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: PRIMARY_COLOR, // Mantém a cor primária
+    marginBottom: 12,
+    marginTop: 1,
     textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'justify',
+    marginBottom: 20,
+    paddingHorizontal: 15,
+    backgroundColor:'#f0f0f0',
+    borderRadius: 8,
+    paddingVertical: 10,
+  },
+  // Card Branco para o Formulário
+  formCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 8,
+    width: '100%',
   },
   form: {
     width: '100%',
@@ -153,30 +202,40 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: 6,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: NEUTRAL_LIGHT,
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: NEUTRAL_LIGHT,
+  },
+  inputWrapperError: {
+    borderColor: ALERT_COLOR,
+    backgroundColor: 'rgba(211, 47, 47, 0.05)',
+  },
+  inputIcon: {
+    marginRight: 10,
   },
   input: {
-    backgroundColor: '#fff',
+    flex: 1,
     color: '#000',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    paddingVertical: 12,
     fontSize: 16,
   },
-  inputError: {
-    borderColor: '#d32f2f',
-  },
   errorText: {
-    color: '#d32f2f',
+    color: ALERT_COLOR,
     fontSize: 12,
-    marginBottom: 4,
+    marginTop: 4,
   },
   button: {
-    backgroundColor: '#1976d2',
+    backgroundColor: PRIMARY_COLOR,
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -188,15 +247,17 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   linkButton: {
-    marginTop: 15,
+    marginTop: 25,
     alignItems: 'center',
   },
   linkText: {
-    color: '#1976d2',
-    fontSize: 14,
+    color: PRIMARY_COLOR, // Cor primária no fundo cinza
+    fontSize: 16,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
-

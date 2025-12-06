@@ -3,12 +3,29 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IBeach, IBeachEvaluation, IBeachType, IMethodology } from '@/types/beach';
 
 // URL da API - garantindo que o APK sempre use esta URL
-// const API_URL = 'https://siscost-backend-2i0s.onrender.com/';
-const API_URL = 'http://192.168.15.3:8000/';
+//const API_URL = 'https://siscost-backend-2i0s.onrender.com/';
+//const API_URL = 'http://192.168.56.1:8000/';
+const API_URL = 'http://10.0.2.2:8000/';
+
 
 interface IGetBeachesResponse {
   message: string;
   data: IBeach[];
+}
+
+interface IMetricsResponse {
+  total_praias: number;
+  total_avaliacoes: number;
+  total_metodologias: number;
+  avaliacoes_recentes: {
+    id_avaliacao: number;
+    data_avaliacao: string;
+    nome_praia: string;
+    nota: number;
+    avaliador_nome: string;
+    // O tipo de perfil é a string literal retornada pelo backend
+    tipo_perfil: 'TURISTA' | 'PESQUISADOR' | 'Sociedade Civil' | 'ONG' | 'Gestor_Publico';
+  }[];
 }
 
 class ApiService {
@@ -49,11 +66,11 @@ class ApiService {
   async login(email: string, password: string) {
     const response = await this.api.post('/api/login', { email, password });
     const { user, token } = response.data;
-    
+
     // Salvar token e usuário
     await AsyncStorage.setItem('@siscost:token', token);
     await AsyncStorage.setItem('@siscost:user', JSON.stringify(user));
-    
+
     return { user, token };
   }
 
@@ -97,7 +114,7 @@ class ApiService {
       return [];
     }
   }
-  
+
 
   async getBeachById(id: number) {
     try {
@@ -123,7 +140,7 @@ class ApiService {
       return [];
     }
   }
-  
+
 
   // Methodology endpoints
   async getMethodologies(): Promise<IMethodology[]> {
@@ -134,7 +151,7 @@ class ApiService {
       return [];
     }
   }
-  
+
 
   async getMethodologyById(id: number) {
     try {
@@ -179,6 +196,10 @@ class ApiService {
 
   async updateProfile(data: any) {
     const response = await this.api.put('/api/profile', data);
+    return response.data;
+  }
+  async getPesquisadorMetrics(): Promise<IMetricsResponse> {
+    const response = await this.api.get('/api/pesquisador/metricas_dashboard');
     return response.data;
   }
 }
