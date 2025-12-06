@@ -5,8 +5,11 @@ import {
   StyleSheet,
   ScrollView,
   Animated,
+  TouchableOpacity, // 🚨 NOVO: Para o botão de voltar
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useData } from '../../../contexts/DataContext';
 import { api } from '../../../services/api';
 import { IBeachEvaluation } from '../../../types/beach';
@@ -19,6 +22,7 @@ export default function EvaluationDetailScreen({ route }: any) {
   const [evaluation, setEvaluation] = useState<IBeachEvaluation | null>(null);
   const [loading, setLoading] = useState(true);
   const [basicEvaluation, setBasicEvaluation] = useState<IBeachEvaluation | null>(null);
+  const navigation = useNavigation(); // ✅ OBTÉM NAVEGAÇÃO
 
   useEffect(() => {
     // Primeiro, tenta buscar do contexto (dados básicos já carregados)
@@ -123,10 +127,10 @@ export default function EvaluationDetailScreen({ route }: any) {
       averageValue: 0,
       allIndicators: [],
     };
-    
+
     const dimensions = currentEvaluation.json_data?.dimensions || [];
     const categories = currentEvaluation.json_data?.categories || [];
-    
+
     // Coletar todos os indicadores
     const allIndicators: any[] = [];
     dimensions.forEach((dim: any) => {
@@ -138,7 +142,7 @@ export default function EvaluationDetailScreen({ route }: any) {
         });
       }
     });
-    
+
     // Se não houver dimensões, usar categorias diretamente
     if (allIndicators.length === 0 && categories.length > 0) {
       categories.forEach((cat: any) => {
@@ -172,7 +176,7 @@ export default function EvaluationDetailScreen({ route }: any) {
 
     // Estatísticas gerais
     const totalDimensions = dimensions.length;
-    const totalCategories = dimensions.reduce((sum: number, dim: any) => 
+    const totalCategories = dimensions.reduce((sum: number, dim: any) =>
       sum + (dim.categories?.length || 0), 0) || categories.length;
     const totalIndicators = allIndicators.length;
     const averageValue = allIndicators.length > 0
@@ -220,7 +224,7 @@ export default function EvaluationDetailScreen({ route }: any) {
   const DistributionChart = ({ data }: { data: { name: string; count: number }[] }) => {
     const total = data.reduce((sum, item) => sum + item.count, 0);
     const colors = ['#7b1fa2', '#1976d2', '#4caf50', '#ff9800', '#f44336', '#9c27b0', '#00bcd4'];
-    
+
     return (
       <View style={styles.distributionContainer}>
         <View style={styles.distributionChart}>
@@ -250,285 +254,293 @@ export default function EvaluationDetailScreen({ route }: any) {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header com Nota */}
-      <View style={[styles.header, { backgroundColor: qualityColor.bg }]}>
-        {currentEvaluation ? (
-          <>
-            <View style={[styles.ratingCircle, { borderColor: qualityColor.border }]}>
-              <Text style={[styles.ratingValue, { color: qualityColor.text }]}>
-                {currentEvaluation.vl_value.toFixed(1)}
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+      <ScrollView style={styles.container}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Icon name="arrow-left" size={24} color={'#333'} />
+        </TouchableOpacity>
+        {/* Header com Nota */}
+        <View style={[styles.header, { backgroundColor: qualityColor.bg }]}>
+          {currentEvaluation ? (
+            <>
+              <View style={[styles.ratingCircle, { borderColor: qualityColor.border }]}>
+                <Text style={[styles.ratingValue, { color: qualityColor.text }]}>
+                  {currentEvaluation.vl_value.toFixed(1)}
+                </Text>
+              </View>
+              <Text style={styles.headerTitle}>Avaliação de Qualidade</Text>
+              <Text style={styles.headerSubtitle}>
+                {format(new Date(currentEvaluation.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
               </Text>
-            </View>
-            <Text style={styles.headerTitle}>Avaliação de Qualidade</Text>
-            <Text style={styles.headerSubtitle}>
-              {format(new Date(currentEvaluation.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-            </Text>
-          </>
-        ) : (
-          <>
-            <SkeletonBox width={100} height={100} style={{ borderRadius: 50, marginBottom: 15 }} />
-            <SkeletonBox width="60%" height={24} style={{ marginBottom: 5 }} />
-            <SkeletonBox width="40%" height={16} />
-          </>
-        )}
-      </View>
-
-      <View style={styles.content}>
-        {/* Estatísticas Resumidas */}
-        {loading && !currentEvaluation ? (
-          <SkeletonCard />
-        ) : chartData.totalIndicators > 0 ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Estatísticas da Avaliação</Text>
-            <View style={styles.statsGrid}>
-              <View style={styles.statItem}>
-                <Icon name="view-grid" size={24} color="#7b1fa2" />
-                <Text style={styles.statValue}>{chartData.totalDimensions}</Text>
-                <Text style={styles.statLabel}>Dimensões</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Icon name="layers" size={24} color="#1976d2" />
-                <Text style={styles.statValue}>{chartData.totalCategories}</Text>
-                <Text style={styles.statLabel}>Categorias</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Icon name="target" size={24} color="#4caf50" />
-                <Text style={styles.statValue}>{chartData.totalIndicators}</Text>
-                <Text style={styles.statLabel}>Indicadores</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Icon name="chart-line" size={24} color="#ff9800" />
-                <Text style={styles.statValue}>{chartData.averageValue.toFixed(1)}</Text>
-                <Text style={styles.statLabel}>Média Geral</Text>
-              </View>
-            </View>
-          </View>
-        ) : null}
-
-        {/* Gráfico: Média por Dimensão */}
-        {loading && !currentEvaluation ? (
-          <SkeletonCard />
-        ) : chartData.dimensionAverages.length > 0 ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Média por Dimensão</Text>
-            <Text style={styles.cardSubtitle}>
-              Distribuição das médias calculadas por dimensão avaliada
-            </Text>
-            <HorizontalBarChart
-              data={chartData.dimensionAverages}
-              maxValue={Math.max(5, ...chartData.dimensionAverages.map(d => d.value))}
-              color="#7b1fa2"
-            />
-          </View>
-        ) : null}
-
-        {/* Gráfico: Top 5 Indicadores */}
-        {loading && !currentEvaluation ? (
-          <SkeletonCard />
-        ) : chartData.topIndicators.length > 0 ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Top 5 Indicadores</Text>
-            <Text style={styles.cardSubtitle}>
-              Indicadores com maiores valores avaliados
-            </Text>
-            <HorizontalBarChart
-              data={chartData.topIndicators.map(ind => ({ name: ind.name, value: ind.value || 0 }))}
-              maxValue={Math.max(5, ...chartData.topIndicators.map(ind => ind.value || 0))}
-              color="#1976d2"
-            />
-          </View>
-        ) : null}
-
-        {/* Gráfico: Distribuição de Indicadores por Dimensão */}
-        {loading && !currentEvaluation ? (
-          <SkeletonCard />
-        ) : chartData.dimensionAverages.length > 0 ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Distribuição de Indicadores</Text>
-            <Text style={styles.cardSubtitle}>
-              Quantidade de indicadores avaliados por dimensão
-            </Text>
-            <DistributionChart
-              data={chartData.dimensionAverages.map(dim => ({ name: dim.name, count: dim.count }))}
-            />
-          </View>
-        ) : null}
-
-        {/* Informações Principais */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Informações da Avaliação</Text>
-          
-          {loading && !currentEvaluation ? (
-            <>
-              <SkeletonBox width="100%" height={16} style={{ marginBottom: 20 }} />
-              <SkeletonBox width="80%" height={16} style={{ marginBottom: 20 }} />
-              <SkeletonBox width="90%" height={16} style={{ marginBottom: 20 }} />
             </>
-          ) : currentEvaluation ? (
+          ) : (
             <>
-              <View style={styles.infoRow}>
-                <Icon name="account-circle" size={20} color="#666" />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Avaliador</Text>
-                  <Text style={styles.infoValue}>
-                    {currentEvaluation.user?.name || `Usuário #${currentEvaluation.id_user}`}
-                  </Text>
+              <SkeletonBox width={100} height={100} style={{ borderRadius: 50, marginBottom: 15 }} />
+              <SkeletonBox width="60%" height={24} style={{ marginBottom: 5 }} />
+              <SkeletonBox width="40%" height={16} />
+            </>
+          )}
+        </View>
+
+        <View style={styles.content}>
+          {/* Estatísticas Resumidas */}
+          {loading && !currentEvaluation ? (
+            <SkeletonCard />
+          ) : chartData.totalIndicators > 0 ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Estatísticas da Avaliação</Text>
+              <View style={styles.statsGrid}>
+                <View style={styles.statItem}>
+                  <Icon name="view-grid" size={24} color="#7b1fa2" />
+                  <Text style={styles.statValue}>{chartData.totalDimensions}</Text>
+                  <Text style={styles.statLabel}>Dimensões</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Icon name="layers" size={24} color="#1976d2" />
+                  <Text style={styles.statValue}>{chartData.totalCategories}</Text>
+                  <Text style={styles.statLabel}>Categorias</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Icon name="target" size={24} color="#4caf50" />
+                  <Text style={styles.statValue}>{chartData.totalIndicators}</Text>
+                  <Text style={styles.statLabel}>Indicadores</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Icon name="chart-line" size={24} color="#ff9800" />
+                  <Text style={styles.statValue}>{chartData.averageValue.toFixed(1)}</Text>
+                  <Text style={styles.statLabel}>Média Geral</Text>
                 </View>
               </View>
-
-          {methodology && (
-            <View style={styles.infoRow}>
-              <Icon name="book-open-variant" size={20} color="#666" />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Metodologia</Text>
-                <Text style={styles.infoValue}>{methodology.des_name}</Text>
-                {methodology.des_description && (
-                  <Text style={styles.infoDescription}>{methodology.des_description}</Text>
-                )}
-              </View>
             </View>
-          )}
+          ) : null}
 
-          {beach && (
-            <View style={styles.infoRow}>
-              <Icon name="beach" size={20} color="#666" />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Praia Avaliada</Text>
-                <Text style={styles.infoValue}>{beach.des_name}</Text>
-                {beach.municipio && (
-                  <Text style={styles.infoDescription}>
-                    {beach.municipio.des_name}, {beach.municipio.estado?.uf}
-                  </Text>
-                )}
-              </View>
+          {/* Gráfico: Média por Dimensão */}
+          {loading && !currentEvaluation ? (
+            <SkeletonCard />
+          ) : chartData.dimensionAverages.length > 0 ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Média por Dimensão</Text>
+              <Text style={styles.cardSubtitle}>
+                Distribuição das médias calculadas por dimensão avaliada
+              </Text>
+              <HorizontalBarChart
+                data={chartData.dimensionAverages}
+                maxValue={Math.max(5, ...chartData.dimensionAverages.map(d => d.value))}
+                color="#7b1fa2"
+              />
             </View>
-          )}
+          ) : null}
 
-              <View style={styles.infoRow}>
-                <Icon name="calendar-clock" size={20} color="#666" />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Data de Criação</Text>
-                  <Text style={styles.infoValue}>
-                    {format(new Date(currentEvaluation.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                  </Text>
-                </View>
-              </View>
+          {/* Gráfico: Top 5 Indicadores */}
+          {loading && !currentEvaluation ? (
+            <SkeletonCard />
+          ) : chartData.topIndicators.length > 0 ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Top 5 Indicadores</Text>
+              <Text style={styles.cardSubtitle}>
+                Indicadores com maiores valores avaliados
+              </Text>
+              <HorizontalBarChart
+                data={chartData.topIndicators.map(ind => ({ name: ind.name, value: ind.value || 0 }))}
+                maxValue={Math.max(5, ...chartData.topIndicators.map(ind => ind.value || 0))}
+                color="#1976d2"
+              />
+            </View>
+          ) : null}
 
-              {currentEvaluation.updated_at !== currentEvaluation.created_at && (
+          {/* Gráfico: Distribuição de Indicadores por Dimensão */}
+          {loading && !currentEvaluation ? (
+            <SkeletonCard />
+          ) : chartData.dimensionAverages.length > 0 ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Distribuição de Indicadores</Text>
+              <Text style={styles.cardSubtitle}>
+                Quantidade de indicadores avaliados por dimensão
+              </Text>
+              <DistributionChart
+                data={chartData.dimensionAverages.map(dim => ({ name: dim.name, count: dim.count }))}
+              />
+            </View>
+          ) : null}
+
+          {/* Informações Principais */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Informações da Avaliação</Text>
+
+            {loading && !currentEvaluation ? (
+              <>
+                <SkeletonBox width="100%" height={16} style={{ marginBottom: 20 }} />
+                <SkeletonBox width="80%" height={16} style={{ marginBottom: 20 }} />
+                <SkeletonBox width="90%" height={16} style={{ marginBottom: 20 }} />
+              </>
+            ) : currentEvaluation ? (
+              <>
                 <View style={styles.infoRow}>
-                  <Icon name="calendar-edit" size={20} color="#666" />
+                  <Icon name="account-circle" size={20} color="#666" />
                   <View style={styles.infoContent}>
-                    <Text style={styles.infoLabel}>Última Atualização</Text>
+                    <Text style={styles.infoLabel}>Avaliador</Text>
                     <Text style={styles.infoValue}>
-                      {format(new Date(currentEvaluation.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      {currentEvaluation.user?.name || `Usuário #${currentEvaluation.id_user}`}
                     </Text>
                   </View>
                 </View>
-              )}
-            </>
-          ) : null}
-        </View>
 
-        {/* Dimensões, Categorias e Indicadores */}
-        {loading && !currentEvaluation ? (
-          <SkeletonCard />
-        ) : currentEvaluation?.json_data?.dimensions && currentEvaluation.json_data.dimensions.length > 0 ? (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Detalhes da Avaliação</Text>
-            <Text style={styles.cardSubtitle}>
-              {currentEvaluation.json_data.dimensions.length} dimensão(ões) avaliada(s)
-            </Text>
-
-            {currentEvaluation.json_data.dimensions.map((dimension: any, dimIdx: number) => (
-              <View key={dimension.id || dimIdx} style={styles.dimensionCard}>
-                <View style={styles.dimensionHeader}>
-                  <Icon name="view-grid" size={20} color="#7b1fa2" />
-                  <Text style={styles.dimensionName}>{dimension.name}</Text>
-                </View>
-                {dimension.description && (
-                  <Text style={styles.dimensionDescription}>{dimension.description}</Text>
+                {methodology && (
+                  <View style={styles.infoRow}>
+                    <Icon name="book-open-variant" size={20} color="#666" />
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Metodologia</Text>
+                      <Text style={styles.infoValue}>{methodology.des_name}</Text>
+                      {methodology.des_description && (
+                        <Text style={styles.infoDescription}>{methodology.des_description}</Text>
+                      )}
+                    </View>
+                  </View>
                 )}
 
-                {dimension.categories && dimension.categories.length > 0 && (
-                  <View style={styles.categoriesContainer}>
-                    {dimension.categories.map((category: any, catIdx: number) => (
-                      <View key={category.id || catIdx} style={styles.categoryCard}>
-                        <View style={styles.categoryHeader}>
-                          <Icon name="layers" size={18} color="#1976d2" />
-                          <Text style={styles.categoryName}>{category.name}</Text>
-                        </View>
-                        {category.description && (
-                          <Text style={styles.categoryDescription}>{category.description}</Text>
-                        )}
+                {beach && (
+                  <View style={styles.infoRow}>
+                    <Icon name="beach" size={20} color="#666" />
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Praia Avaliada</Text>
+                      <Text style={styles.infoValue}>{beach.des_name}</Text>
+                      {beach.municipio && (
+                        <Text style={styles.infoDescription}>
+                          {beach.municipio.des_name}, {beach.municipio.estado?.uf}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                )}
 
-                        {category.indicators && category.indicators.length > 0 && (
-                          <View style={styles.indicatorsContainer}>
-                            {category.indicators.map((indicator: any, indIdx: number) => (
-                              <View key={indicator.id || indIdx} style={styles.indicatorRow}>
-                                <View style={styles.indicatorInfo}>
-                                  <Icon name="target" size={16} color="#666" />
-                                  <Text style={styles.indicatorName}>{indicator.name}</Text>
-                                </View>
-                                {indicator.value !== null && indicator.value !== undefined && (
-                                  <View style={styles.indicatorValue}>
-                                    <Text style={styles.indicatorValueText}>
-                                      {indicator.value.toFixed(1)}
-                                    </Text>
+                <View style={styles.infoRow}>
+                  <Icon name="calendar-clock" size={20} color="#666" />
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Data de Criação</Text>
+                    <Text style={styles.infoValue}>
+                      {format(new Date(currentEvaluation.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </Text>
+                  </View>
+                </View>
+
+                {currentEvaluation.updated_at !== currentEvaluation.created_at && (
+                  <View style={styles.infoRow}>
+                    <Icon name="calendar-edit" size={20} color="#666" />
+                    <View style={styles.infoContent}>
+                      <Text style={styles.infoLabel}>Última Atualização</Text>
+                      <Text style={styles.infoValue}>
+                        {format(new Date(currentEvaluation.updated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </>
+            ) : null}
+          </View>
+
+          {/* Dimensões, Categorias e Indicadores */}
+          {loading && !currentEvaluation ? (
+            <SkeletonCard />
+          ) : currentEvaluation?.json_data?.dimensions && currentEvaluation.json_data.dimensions.length > 0 ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Detalhes da Avaliação</Text>
+              <Text style={styles.cardSubtitle}>
+                {currentEvaluation.json_data.dimensions.length} dimensão(ões) avaliada(s)
+              </Text>
+
+              {currentEvaluation.json_data.dimensions.map((dimension: any, dimIdx: number) => (
+                <View key={dimension.id || dimIdx} style={styles.dimensionCard}>
+                  <View style={styles.dimensionHeader}>
+                    <Icon name="view-grid" size={20} color="#7b1fa2" />
+                    <Text style={styles.dimensionName}>{dimension.name}</Text>
+                  </View>
+                  {dimension.description && (
+                    <Text style={styles.dimensionDescription}>{dimension.description}</Text>
+                  )}
+
+                  {dimension.categories && dimension.categories.length > 0 && (
+                    <View style={styles.categoriesContainer}>
+                      {dimension.categories.map((category: any, catIdx: number) => (
+                        <View key={category.id || catIdx} style={styles.categoryCard}>
+                          <View style={styles.categoryHeader}>
+                            <Icon name="layers" size={18} color="#1976d2" />
+                            <Text style={styles.categoryName}>{category.name}</Text>
+                          </View>
+                          {category.description && (
+                            <Text style={styles.categoryDescription}>{category.description}</Text>
+                          )}
+
+                          {category.indicators && category.indicators.length > 0 && (
+                            <View style={styles.indicatorsContainer}>
+                              {category.indicators.map((indicator: any, indIdx: number) => (
+                                <View key={indicator.id || indIdx} style={styles.indicatorRow}>
+                                  <View style={styles.indicatorInfo}>
+                                    <Icon name="target" size={16} color="#666" />
+                                    <Text style={styles.indicatorName}>{indicator.name}</Text>
                                   </View>
-                                )}
-                              </View>
-                            ))}
-                          </View>
-                        )}
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        {/* Fallback para categorias sem dimensões */}
-        {!loading && currentEvaluation && (!currentEvaluation.json_data?.dimensions || currentEvaluation.json_data.dimensions.length === 0) &&
-         currentEvaluation.json_data?.categories && currentEvaluation.json_data.categories.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Categorias e Indicadores</Text>
-            {currentEvaluation.json_data.categories.map((category: any, catIdx: number) => (
-              <View key={category.id || catIdx} style={styles.categoryCard}>
-                <View style={styles.categoryHeader}>
-                  <Icon name="layers" size={18} color="#1976d2" />
-                  <Text style={styles.categoryName}>{category.name}</Text>
-                </View>
-                {category.description && (
-                  <Text style={styles.categoryDescription}>{category.description}</Text>
-                )}
-                {category.indicators && category.indicators.length > 0 && (
-                  <View style={styles.indicatorsContainer}>
-                    {category.indicators.map((indicator: any, indIdx: number) => (
-                      <View key={indicator.id || indIdx} style={styles.indicatorRow}>
-                        <View style={styles.indicatorInfo}>
-                          <Icon name="target" size={16} color="#666" />
-                          <Text style={styles.indicatorName}>{indicator.name}</Text>
+                                  {indicator.value !== null && indicator.value !== undefined && (
+                                    <View style={styles.indicatorValue}>
+                                      <Text style={styles.indicatorValueText}>
+                                        {indicator.value.toFixed(1)}
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+                              ))}
+                            </View>
+                          )}
                         </View>
-                        {indicator.value !== null && indicator.value !== undefined && (
-                          <View style={styles.indicatorValue}>
-                            <Text style={styles.indicatorValueText}>
-                              {indicator.value.toFixed(1)}
-                            </Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {/* Fallback para categorias sem dimensões */}
+          {!loading && currentEvaluation && (!currentEvaluation.json_data?.dimensions || currentEvaluation.json_data.dimensions.length === 0) &&
+            currentEvaluation.json_data?.categories && currentEvaluation.json_data.categories.length > 0 && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Categorias e Indicadores</Text>
+                {currentEvaluation.json_data.categories.map((category: any, catIdx: number) => (
+                  <View key={category.id || catIdx} style={styles.categoryCard}>
+                    <View style={styles.categoryHeader}>
+                      <Icon name="layers" size={18} color="#1976d2" />
+                      <Text style={styles.categoryName}>{category.name}</Text>
+                    </View>
+                    {category.description && (
+                      <Text style={styles.categoryDescription}>{category.description}</Text>
+                    )}
+                    {category.indicators && category.indicators.length > 0 && (
+                      <View style={styles.indicatorsContainer}>
+                        {category.indicators.map((indicator: any, indIdx: number) => (
+                          <View key={indicator.id || indIdx} style={styles.indicatorRow}>
+                            <View style={styles.indicatorInfo}>
+                              <Icon name="target" size={16} color="#666" />
+                              <Text style={styles.indicatorName}>{indicator.name}</Text>
+                            </View>
+                            {indicator.value !== null && indicator.value !== undefined && (
+                              <View style={styles.indicatorValue}>
+                                <Text style={styles.indicatorValueText}>
+                                  {indicator.value.toFixed(1)}
+                                </Text>
+                              </View>
+                            )}
                           </View>
-                        )}
+                        ))}
                       </View>
-                    ))}
+                    )}
                   </View>
-                )}
+                ))}
               </View>
-            ))}
-          </View>
-        )}
-      </View>
-    </ScrollView>
+            )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -550,6 +562,19 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     color: '#666',
+  },
+  backButton: {
+    position: 'absolute',
+    top: 15, // Posição abaixo da barra de status
+    left: 15,
+    zIndex: 10,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    elevation: 4,
   },
   header: {
     padding: 30,

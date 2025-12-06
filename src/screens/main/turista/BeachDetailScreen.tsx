@@ -5,13 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  FlatList, 
+  FlatList,
   TouchableOpacity,
   Platform, // Necessário para usar a barra de status de forma robusta
   StatusBar, // Necessário para usar a barra de status de forma robusta
 } from 'react-native';
 import { Image } from 'expo-image';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; 
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import { SafeAreaView } from 'react-native-safe-area-context'; // 🚨 REINTRODUZINDO SAFES AREAS
@@ -20,15 +20,15 @@ import { useNavigation } from '@react-navigation/native'; // 🚨 REINTRODUZINDO
 import { useData } from '../../../contexts/DataContext';
 import { IBeach, IBeachEvaluation } from '../../../types/beach.d';
 
-const PRIMARY_COLOR = '#1976d2'; 
+const PRIMARY_COLOR = '#1976d2';
 const SUCCESS_COLOR = '#4caf50';
 const ALERT_COLOR = '#f44336';
 
 const getQualityColor = (nota: number) => {
-    if (nota >= 4.5) return SUCCESS_COLOR;
-    if (nota >= 3.5) return PRIMARY_COLOR;
-    if (nota >= 2.5) return '#ff9800'; 
-    return ALERT_COLOR;
+  if (nota >= 4.5) return SUCCESS_COLOR;
+  if (nota >= 3.5) return PRIMARY_COLOR;
+  if (nota >= 2.5) return '#ff9800';
+  return ALERT_COLOR;
 };
 
 // Calcula a altura da barra de status para uso no posicionamento do botão
@@ -36,17 +36,20 @@ const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight 
 
 export default function BeachDetailScreen({ route }: any) {
   const { beachId } = route.params;
-  const { getBeachById, getEvaluationsByBeachId, getMethodologyById } = useData(); 
+  const { getBeachById, getEvaluationsByBeachId, getMethodologyById } = useData();
   const navigation = useNavigation(); // ✅ Instancia o hook de navegação
   const [beach, setBeach] = useState<IBeach>({} as IBeach);
   const [loading, setLoading] = useState(true);
   const [beachEvaluations, setBeachEvaluations] = useState<IBeachEvaluation[]>([]);
 
+  const API_URL = 'https://siscost-backend-2i0s.onrender.com';
+
   const getImageUrl = useCallback((path: string | null | undefined) => {
     if (!path) return null;
-    return path.startsWith('http') ? path : `${process.env.EXPO_PUBLIC_API_URL}/${path}`;
+    // Usa a constante API_URL para montar o caminho
+    return path.startsWith('http') ? path : `${API_URL}/${path}`;
   }, []);
-
+  
   const imageUrl = getImageUrl(beach?.foto_principal_path);
 
   useEffect(() => {
@@ -57,13 +60,13 @@ export default function BeachDetailScreen({ route }: any) {
     setLoading(true);
     const data = getBeachById(beachId);
     setBeach(data as IBeach | {} as IBeach);
-    
+
     if (data?.id) {
-        const evaluations = getEvaluationsByBeachId(data.id);
-        evaluations.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        setBeachEvaluations(evaluations);
+      const evaluations = getEvaluationsByBeachId(data.id);
+      evaluations.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setBeachEvaluations(evaluations);
     }
-    
+
     setLoading(false);
   }
 
@@ -71,14 +74,14 @@ export default function BeachDetailScreen({ route }: any) {
   const renderEvaluationCard = ({ item }: { item: IBeachEvaluation }) => {
     const methodology = getMethodologyById(item.id_metodologie);
     const ratingColor = getQualityColor(item.vl_value);
-    
+
     const evaluatorName = item.user?.name || item.id_user ? `Usuário #${item.id_user}` : 'Avaliador Anônimo';
     const evaluationType = methodology?.des_name ? 'Metodológica' : 'Percepção';
-    
+
     return (
       <View style={styles.evaluationCard}>
         <View style={styles.evaluationHeaderRow}>
-          
+
           <View style={styles.evaluationMeta}>
             <Text style={styles.evaluatorName}>
               {item.user?.name}
@@ -87,7 +90,7 @@ export default function BeachDetailScreen({ route }: any) {
               Avaliado em {format(new Date(item.created_at), 'dd/MM/yyyy')}
             </Text>
           </View>
-          
+
           <View style={[styles.evaluationScore, { borderColor: ratingColor }]}>
             <Text style={[styles.evaluationScoreText, { color: ratingColor }]}>
               {item.vl_value.toFixed(1)}
@@ -95,20 +98,20 @@ export default function BeachDetailScreen({ route }: any) {
           </View>
 
         </View>
-        
-        {item.ds_comment && ( 
-            <Text style={styles.evaluationComment} numberOfLines={2}>
-                "{item.ds_comment}"
-            </Text>
+
+        {item.ds_comment && (
+          <Text style={styles.evaluationComment} numberOfLines={2}>
+            "{item.ds_comment}"
+          </Text>
         )}
-        
+
         <Text style={[styles.evaluationMethodologyTag, { color: ratingColor }]}>
-             Tipo: {evaluationType}
+          Tipo: {evaluationType}
         </Text>
       </View>
     );
   };
-  
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -128,98 +131,98 @@ export default function BeachDetailScreen({ route }: any) {
 
   return (
     // 🚨 1. SafeAreaView com fundo cinza claro para evitar sobreposição 🚨
-    <SafeAreaView style={{flex: 1, backgroundColor: '#f5f5f5'}}>
-        <ScrollView style={styles.container}>
-            {/* 🚨 BOTÃO DE VOLTAR FLUTUANTE 🚨 
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+      <ScrollView style={styles.container}>
+        {/* 🚨 BOTÃO DE VOLTAR FLUTUANTE 🚨 
                Posicionado abaixo da barra de status usando o padding do SafeAreaView
             */}
-            <TouchableOpacity 
-                style={[styles.backButton, { top: STATUS_BAR_HEIGHT + 10 }]} // Ajuste o 'top'
-                onPress={() => navigation.goBack()}
-            >
-                <Icon name="arrow-left" size={24} color={'#333'} />
-            </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.backButton, { top: STATUS_BAR_HEIGHT + 10 }]} // Ajuste o 'top'
+          onPress={() => navigation.goBack()}
+        >
+          <Icon name="arrow-left" size={24} color={'#333'} />
+        </TouchableOpacity>
 
-            {imageUrl ? (
-                <Image
-                source={{ uri: imageUrl }}
-                style={styles.image}
-                contentFit="cover"
-                transition={300}
-                priority="high"
-                />
-            ) : (
-                <View style={[styles.image, styles.placeholderImage]}>
-                <Text style={styles.placeholderText}>Sem imagem</Text>
-                </View>
+        {imageUrl ? (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.image}
+            contentFit="cover"
+            transition={300}
+            priority="high"
+          />
+        ) : (
+          <View style={[styles.image, styles.placeholderImage]}>
+            <Text style={styles.placeholderText}>Sem imagem</Text>
+          </View>
+        )}
+
+        <View style={styles.content}>
+          <Text style={styles.title}>{beach.des_name}</Text>
+          <Text style={styles.location}>
+            {beach.municipio?.des_name}, {beach.municipio?.estado?.uf}
+          </Text>
+
+          {/* Descrição */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Descrição</Text>
+            <Text style={styles.description}>{beach.des_description}</Text>
+          </View>
+
+          {/* Grid de Informações Chave */}
+          <View style={styles.infoGrid}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Tipo de Praia</Text>
+              <Text style={styles.infoValue}>{beach.beach_type?.des_name}</Text>
+            </View>
+
+            {beach.nota_qualidade_atual !== null && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Nota de Qualidade</Text>
+                <Text style={styles.infoValue}>{beach.nota_qualidade_atual.toFixed(1)}</Text>
+              </View>
             )}
 
-            <View style={styles.content}>
-                <Text style={styles.title}>{beach.des_name}</Text>
-                <Text style={styles.location}>
-                {beach.municipio?.des_name}, {beach.municipio?.estado?.uf}
-                </Text>
-
-                {/* Descrição */}
-                <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Descrição</Text>
-                <Text style={styles.description}>{beach.des_description}</Text>
-                </View>
-
-                {/* Grid de Informações Chave */}
-                <View style={styles.infoGrid}>
-                <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Tipo de Praia</Text>
-                    <Text style={styles.infoValue}>{beach.beach_type?.des_name}</Text>
-                </View>
-
-                {beach.nota_qualidade_atual !== null && (
-                    <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Nota de Qualidade</Text>
-                    <Text style={styles.infoValue}>{beach.nota_qualidade_atual.toFixed(1)}</Text>
-                    </View>
-                )}
-
-                <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Status de Monitoramento</Text>
-                    <Text style={styles.infoValue}>{beach.status_monitoramento}</Text>
-                </View>
-                
-                {/* Botão de Avaliar para o Turista (Adicionado) */}
-                <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Sua Contribuição</Text>
-                    <TouchableOpacity style={styles.reviewButton}>
-                        <Text style={styles.reviewButtonText}>+ Avaliar</Text>
-                    </TouchableOpacity>
-                </View>
-                </View>
-
-                {/* HISTÓRICO DE AVALIAÇÕES */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>
-                        Histórico de Avaliações ({beachEvaluations.length})
-                    </Text>
-                    {beachEvaluations.length > 0 ? (
-                        <FlatList
-                            data={beachEvaluations}
-                            renderItem={renderEvaluationCard}
-                            keyExtractor={(item) => item.id.toString()}
-                            scrollEnabled={false} 
-                        />
-                    ) : (
-                        <Text style={styles.emptyHistoryText}>Seja o primeiro a avaliar esta praia!</Text>
-                    )}
-                </View>
-                
-                {/* Cadastrado por (Mantido do original) */}
-                {beach.cadastrador && (
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Cadastrado por</Text>
-                    <Text style={styles.description}>{beach.cadastrador.name}</Text>
-                </View>
-                )}
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Status de Monitoramento</Text>
+              <Text style={styles.infoValue}>{beach.status_monitoramento}</Text>
             </View>
-        </ScrollView>
+
+            {/* Botão de Avaliar para o Turista (Adicionado) */}
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Sua Contribuição</Text>
+              <TouchableOpacity style={styles.reviewButton}>
+                <Text style={styles.reviewButtonText}>+ Avaliar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* HISTÓRICO DE AVALIAÇÕES */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Histórico de Avaliações ({beachEvaluations.length})
+            </Text>
+            {beachEvaluations.length > 0 ? (
+              <FlatList
+                data={beachEvaluations}
+                renderItem={renderEvaluationCard}
+                keyExtractor={(item) => item.id.toString()}
+                scrollEnabled={false}
+              />
+            ) : (
+              <Text style={styles.emptyHistoryText}>Seja o primeiro a avaliar esta praia!</Text>
+            )}
+          </View>
+
+          {/* Cadastrado por (Mantido do original) */}
+          {beach.cadastrador && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Cadastrado por</Text>
+              <Text style={styles.description}>{beach.cadastrador.name}</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

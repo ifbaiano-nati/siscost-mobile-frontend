@@ -3,9 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IBeach, IBeachEvaluation, IBeachType, IMethodology } from '@/types/beach';
 
 // URL da API - garantindo que o APK sempre use esta URL
-//const API_URL = 'https://siscost-backend-2i0s.onrender.com/';
+const API_URL = 'https://siscost-backend-2i0s.onrender.com/';
 //const API_URL = 'http://192.168.56.1:8000/';
-const API_URL = 'http://10.0.2.2:8000/';
+//const API_URL = 'http://10.0.2.2:8000/';
 
 
 interface IGetBeachesResponse {

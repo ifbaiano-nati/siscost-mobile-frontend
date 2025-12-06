@@ -9,18 +9,18 @@ import {
   ActivityIndicator,
   RefreshControl,
   TextInput,
-  Platform, 
+  Platform,
   StatusBar, // 🚨 NOVO: Para cálculo do espaçamento superior
 } from 'react-native';
 import { Image } from 'expo-image';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useData } from '../../../contexts/DataContext';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../../../contexts/AuthContext'; 
+import { useAuth } from '../../../contexts/AuthContext';
 
-const PRIMARY_COLOR = '#1976d2'; 
-const ALERT_COLOR = '#f44336'; 
-const SUCCESS_COLOR = '#4caf50'; 
+const PRIMARY_COLOR = '#1976d2';
+const ALERT_COLOR = '#f44336';
+const SUCCESS_COLOR = '#4caf50';
 
 // Funções utilitárias (usadas apenas no modo Pesquisador, mas definidas globalmente)
 const getStatusIndicator = (status: string | null) => {
@@ -28,6 +28,8 @@ const getStatusIndicator = (status: string | null) => {
   if (status === 'ALERTA') return { icon: 'alert-circle', color: ALERT_COLOR };
   return { icon: 'help-circle', color: '#ff9800' };
 };
+
+const API_URL = 'https://siscost-backend-2i0s.onrender.com'
 
 // Altura da barra de status (aproximada para Android/iOS)
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight || 20);
@@ -38,7 +40,7 @@ export default function BeachesScreen() {
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Estados de Filtro (AGORA ACESSÍVEL PELO TURISTA)
   const [filterType, setFilterType] = useState<number | null>(null);
   const [filterRating, setFilterRating] = useState<'ALERTA' | 'SUCESSO' | null>(null);
@@ -62,7 +64,7 @@ export default function BeachesScreen() {
 
   // Lógica de Filtragem CONDICIONAL (AGORA TODOS USAM)
   const filteredBeaches = useMemo(() => {
-    let list = beaches; 
+    let list = beaches;
     const lowerCaseQuery = searchQuery.toLowerCase();
 
     // 1. Filtragem por busca
@@ -76,12 +78,12 @@ export default function BeachesScreen() {
 
     // 2. Filtros Avançados (Ativos para AMBOS, mas a exibição é opcional)
     if (filterType !== null) {
-        list = list.filter(beach => beach.id_beach_type === filterType);
+      list = list.filter(beach => beach.id_beach_type === filterType);
     }
     if (filterRating === 'ALERTA') {
-        list = list.filter(beach => beach.nota_qualidade_atual !== null && beach.nota_qualidade_atual < 3.0);
+      list = list.filter(beach => beach.nota_qualidade_atual !== null && beach.nota_qualidade_atual < 3.0);
     } else if (filterRating === 'SUCESSO') {
-        list = list.filter(beach => beach.nota_qualidade_atual !== null && beach.nota_qualidade_atual >= 4.5);
+      list = list.filter(beach => beach.nota_qualidade_atual !== null && beach.nota_qualidade_atual >= 4.5);
     }
 
     return list;
@@ -95,7 +97,7 @@ export default function BeachesScreen() {
 
   const getImageUrl = useCallback((path: string | null | undefined) => {
     if (!path) return null;
-    return path.startsWith('http') ? path : `${process.env.EXPO_PUBLIC_API_URL}/${path}`;
+    return path.startsWith('http') ? path : `${API_URL}/${path}`;
   }, []);
 
 
@@ -104,7 +106,7 @@ export default function BeachesScreen() {
     const imageUrl = getImageUrl(item.foto_principal_path);
     const status = getStatusIndicator(item.status_monitoramento);
     const evaluationCount = evaluationsByBeach.get(item.id) || 0;
-    
+
     // NAVEGAÇÃO CONDICIONAL
     const detailScreenName = isPesquisador ? 'PesquisadorBeachDetail' : 'BeachDetail';
 
@@ -115,7 +117,7 @@ export default function BeachesScreen() {
       <TouchableOpacity
         style={styles.beachCard}
         onPress={() => {
-          (navigation as any).navigate(detailScreenName, { beachId: item.id }); 
+          (navigation as any).navigate(detailScreenName, { beachId: item.id });
         }}
       >
         <View style={styles.cardHeader}>
@@ -137,56 +139,56 @@ export default function BeachesScreen() {
           {/* NOTA VISUAL EM DESTAQUE SOBRE A IMAGEM (Comum a ambos) */}
           {item.nota_qualidade_atual !== null && (
             <View style={[styles.ratingBadgeImage, { backgroundColor: ratingColor }]}>
-                <Icon name="star" size={16} color="#fff" />
-                <Text style={styles.ratingBadgeImageValue}>
-                    {item.nota_qualidade_atual.toFixed(1)}
-                </Text>
+              <Icon name="star" size={16} color="#fff" />
+              <Text style={styles.ratingBadgeImageValue}>
+                {item.nota_qualidade_atual.toFixed(1)}
+              </Text>
             </View>
           )}
-          
+
           {/* Botão de Análise Rápida (APENAS PESQUISADOR) */}
           {isPesquisador && (
-              <TouchableOpacity 
-                style={styles.analyzeButton}
-                onPress={() => (navigation as any).navigate(detailScreenName, { beachId: item.id })}
-              >
-                <Icon name="chart-bar" size={24} color="#FFF" />
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.analyzeButton}
+              onPress={() => (navigation as any).navigate(detailScreenName, { beachId: item.id })}
+            >
+              <Icon name="chart-bar" size={24} color="#FFF" />
+            </TouchableOpacity>
           )}
         </View>
 
         <View style={styles.beachInfo}>
-          
-          <View style={styles.titleRow}> 
+
+          <View style={styles.titleRow}>
             <Text style={styles.beachName}>{item.des_name}</Text>
           </View>
-          
+
           {/* Localização e Tipo */}
           <View style={styles.locationRow}>
-              <Icon name="map-marker" size={14} color="#666" style={{marginRight: 4}} />
-              <Text style={styles.beachLocation}>
-                {item.municipio?.des_name}, {item.municipio?.estado?.uf}
-              </Text>
+            <Icon name="map-marker" size={14} color="#666" style={{ marginRight: 4 }} />
+            <Text style={styles.beachLocation}>
+              {item.municipio?.des_name}, {item.municipio?.estado?.uf}
+            </Text>
           </View>
-          
+
           <Text style={styles.beachType}>{getBeachTypeById(item.id_beach_type)?.des_name}</Text>
-          
+
           {/* Status e Contagem (Rodapé) */}
           <View style={styles.footerRow}>
-             {/* Indicador de Status (APENAS PESQUISADOR) */}
-             {isPesquisador && (
-                <View style={styles.statusBadge}>
-                    <Icon name={status.icon} size={14} color={status.color} />
-                    <Text style={[styles.statusText, { color: status.color }]}>
-                        {item.status_monitoramento || 'NÃO CLASSIFICADO'}
-                    </Text>
-                </View>
-             )}
-             
-             {/* Contagem de Avaliações (Visível para Turista e Pesquisador) */}
-             <Text style={styles.evaluationCountText}>
-                {evaluationCount} Avaliaç{(evaluationCount === 1) ? 'ão' : 'ões'}
-             </Text>
+            {/* Indicador de Status (APENAS PESQUISADOR) */}
+            {isPesquisador && (
+              <View style={styles.statusBadge}>
+                <Icon name={status.icon} size={14} color={status.color} />
+                <Text style={[styles.statusText, { color: status.color }]}>
+                  {item.status_monitoramento || 'NÃO CLASSIFICADO'}
+                </Text>
+              </View>
+            )}
+
+            {/* Contagem de Avaliações (Visível para Turista e Pesquisador) */}
+            <Text style={styles.evaluationCountText}>
+              {evaluationCount} Avaliaç{(evaluationCount === 1) ? 'ão' : 'ões'}
+            </Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -200,7 +202,7 @@ export default function BeachesScreen() {
   // 🚨 CORREÇÃO PRINCIPAL DE ESPAÇAMENTO: O Top View Contém o Padding 🚨
   return (
     <View style={[styles.container, { paddingTop: STATUS_BAR_HEIGHT }]}>
-      
+
       {/* SearchBar é comum a ambos */}
       <View style={styles.searchContainer}>
         <Icon name="magnify" size={20} color="#666" style={styles.searchIcon} />
@@ -221,36 +223,36 @@ export default function BeachesScreen() {
       {/* BARRA DE FILTROS AVANÇADOS (Agora visível para o Turista, se ele clicar) */}
       {/* 🚨 Lógica de exibição simples: se a barra de busca estiver vazia, mostra os filtros rápidos 🚨 */}
       {!searchQuery && (
-          <View style={styles.filterBar}>
-            <Text style={styles.filterTitle}>Filtros Rápidos:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <TouchableOpacity
-                style={[styles.filterPill, filterRating === 'ALERTA' && styles.filterPillActive, {backgroundColor: filterRating === 'ALERTA' ? PRIMARY_COLOR : '#f0f0f0'}]}
-                onPress={() => toggleFilterRating('ALERTA')}
-              >
-                <Icon name="fire" size={16} color={filterRating === 'ALERTA' ? '#fff' : ALERT_COLOR} />
-                <Text style={[styles.filterPillText, filterRating === 'ALERTA' && styles.filterPillTextActive, {color: filterRating === 'ALERTA' ? '#fff' : ALERT_COLOR}]}>
-                  Abaixo de 3.0
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.filterPill, filterRating === 'SUCESSO' && styles.filterPillActive, {backgroundColor: filterRating === 'SUCESSO' ? PRIMARY_COLOR : '#f0f0f0'}]}
-                onPress={() => toggleFilterRating('SUCESSO')}
-              >
-                <Icon name="star-check" size={16} color={filterRating === 'SUCESSO' ? '#fff' : SUCCESS_COLOR} />
-                <Text style={[styles.filterPillText, filterRating === 'SUCESSO' && styles.filterPillTextActive, {color: filterRating === 'SUCESSO' ? '#fff' : SUCCESS_COLOR}]}>
-                  Acima de 4.5
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.filterPill, filterType === 1 && styles.filterPillActive]}
-                onPress={() => setFilterType(filterType === 1 ? null : 1)}
-              >
-                <Icon name="city" size={16} color={filterType === 1 ? '#fff' : '#333'} />
-                <Text style={[styles.filterPillText, filterType === 1 && styles.filterPillTextActive]}>Tipo Urbana</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
+        <View style={styles.filterBar}>
+          <Text style={styles.filterTitle}>Filtros Rápidos:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <TouchableOpacity
+              style={[styles.filterPill, filterRating === 'ALERTA' && styles.filterPillActive, { backgroundColor: filterRating === 'ALERTA' ? PRIMARY_COLOR : '#f0f0f0' }]}
+              onPress={() => toggleFilterRating('ALERTA')}
+            >
+              <Icon name="fire" size={16} color={filterRating === 'ALERTA' ? '#fff' : ALERT_COLOR} />
+              <Text style={[styles.filterPillText, filterRating === 'ALERTA' && styles.filterPillTextActive, { color: filterRating === 'ALERTA' ? '#fff' : ALERT_COLOR }]}>
+                Abaixo de 3.0
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterPill, filterRating === 'SUCESSO' && styles.filterPillActive, { backgroundColor: filterRating === 'SUCESSO' ? PRIMARY_COLOR : '#f0f0f0' }]}
+              onPress={() => toggleFilterRating('SUCESSO')}
+            >
+              <Icon name="star-check" size={16} color={filterRating === 'SUCESSO' ? '#fff' : SUCCESS_COLOR} />
+              <Text style={[styles.filterPillText, filterRating === 'SUCESSO' && styles.filterPillTextActive, { color: filterRating === 'SUCESSO' ? '#fff' : SUCCESS_COLOR }]}>
+                Acima de 4.5
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterPill, filterType === 1 && styles.filterPillActive]}
+              onPress={() => setFilterType(filterType === 1 ? null : 1)}
+            >
+              <Icon name="city" size={16} color={filterType === 1 ? '#fff' : '#333'} />
+              <Text style={[styles.filterPillText, filterType === 1 && styles.filterPillTextActive]}>Tipo Urbana</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
       )}
 
       {loading && !refreshing ? (
@@ -322,8 +324,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 15,
     overflow: 'hidden',
-    borderWidth: 1, 
-    borderColor: '#e0e0e0', 
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -349,7 +351,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 8,
   },
-  analyzeButton: { 
+  analyzeButton: {
     position: 'absolute',
     top: 10,
     right: 70, // Ajuste para dar espaço ao novo badge
@@ -358,7 +360,7 @@ const styles = StyleSheet.create({
     padding: 8,
     zIndex: 5,
   },
-  
+
   // 🚨 BADGE DE NOTA SOBRE A IMAGEM 🚨
   ratingBadgeImage: {
     position: 'absolute',
@@ -396,7 +398,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     marginRight: 10,
   },
-  
+
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -421,7 +423,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#f0f0f0',
     marginTop: 5,
   },
-  statusBadge: { 
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
