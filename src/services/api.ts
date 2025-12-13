@@ -202,6 +202,10 @@ class ApiService {
     const response = await this.api.get('/api/pesquisador/metricas_dashboard');
     return response.data;
   }
+  async submitReview(data: { beach_id: number; comment_text: string; rating?: number }) {
+    const response = await this.api.post('/api/reviews/submit', data);
+    return response.data;
+  }
 }
 
 export const api = new ApiService();

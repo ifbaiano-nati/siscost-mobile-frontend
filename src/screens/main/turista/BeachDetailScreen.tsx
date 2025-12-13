@@ -7,18 +7,22 @@ import {
   ActivityIndicator,
   FlatList,
   TouchableOpacity,
-  Platform, // Necessário para usar a barra de status de forma robusta
-  StatusBar, // Necessário para usar a barra de status de forma robusta
+  Platform,
+  StatusBar,
+  Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
-import { SafeAreaView } from 'react-native-safe-area-context'; // 🚨 REINTRODUZINDO SAFES AREAS
-import { useNavigation } from '@react-navigation/native'; // 🚨 REINTRODUZINDO NAVEGAÇÃO
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 
 import { useData } from '../../../contexts/DataContext';
-import { IBeach, IBeachEvaluation } from '../../../types/beach.d';
+import { IBeach, IBeachEvaluation, IBeachReview } from '../../../types/beach.d';
+import BeachReviewCard from '../../../components/ReviewCard';
+import BeachReviewModal from '../../../components/BeachReview';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const PRIMARY_COLOR = '#1976d2';
 const SUCCESS_COLOR = '#4caf50';
@@ -31,29 +35,69 @@ const getQualityColor = (nota: number) => {
   return ALERT_COLOR;
 };
 
-// Calcula a altura da barra de status para uso no posicionamento do botão
 const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight || 20);
 
 export default function BeachDetailScreen({ route }: any) {
   const { beachId } = route.params;
   const { getBeachById, getEvaluationsByBeachId, getMethodologyById } = useData();
-  const navigation = useNavigation(); // ✅ Instancia o hook de navegação
+  const navigation = useNavigation();
+
   const [beach, setBeach] = useState<IBeach>({} as IBeach);
   const [loading, setLoading] = useState(true);
   const [beachEvaluations, setBeachEvaluations] = useState<IBeachEvaluation[]>([]);
+
+  const { isAuthenticated, authToken } = useAuth(); // 1. Pegue o 'user' aqui
+
+  const [touristReviews, setTouristReviews] = useState<IBeachReview[]>([]);
+  const [averageReviewRating, setAverageReviewRating] = useState<number>(0);
+
+  // const userProfileId = Number(
+  //   user?.profile_id ||
+  //   user?.user_profile?.profile?.id
+  // );
+
+  // const isTurista = userProfileId === 5;
+
+  // ✅ CORREÇÃO 1: Garante que inicia falso
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const API_URL = 'https://siscost-backend-2i0s.onrender.com';
 
   const getImageUrl = useCallback((path: string | null | undefined) => {
     if (!path) return null;
-    // Usa a constante API_URL para montar o caminho
     return path.startsWith('http') ? path : `${API_URL}/${path}`;
   }, []);
-  
+
   const imageUrl = getImageUrl(beach?.foto_principal_path);
+
+  const fetchBeachReviews = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/beaches/${beachId}/reviews`);
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        console.warn(`Erro reviews (${response.status})`);
+        return;
+      }
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        return;
+      }
+
+      setTouristReviews(data.reviews || []);
+      setAverageReviewRating(data.average_rating || 0);
+
+    } catch (e) {
+      console.error("Erro reviews:", e);
+    }
+  }, [beachId, API_URL]);
 
   useEffect(() => {
     loadBeachData();
+    fetchBeachReviews();
   }, [beachId]);
 
   async function loadBeachData() {
@@ -70,41 +114,33 @@ export default function BeachDetailScreen({ route }: any) {
     setLoading(false);
   }
 
-  // Componente de renderização de cada item de avaliação do histórico
   const renderEvaluationCard = ({ item }: { item: IBeachEvaluation }) => {
     const methodology = getMethodologyById(item.id_metodologie);
     const ratingColor = getQualityColor(item.vl_value);
-
-    const evaluatorName = item.user?.name || item.id_user ? `Usuário #${item.id_user}` : 'Avaliador Anônimo';
     const evaluationType = methodology?.des_name ? 'Metodológica' : 'Percepção';
 
     return (
       <View style={styles.evaluationCard}>
         <View style={styles.evaluationHeaderRow}>
-
           <View style={styles.evaluationMeta}>
             <Text style={styles.evaluatorName}>
-              {item.user?.name}
+              {item.user?.name || `Usuário #${item.id_user}`}
             </Text>
             <Text style={styles.evaluationDate}>
               Avaliado em {format(new Date(item.created_at), 'dd/MM/yyyy')}
             </Text>
           </View>
-
           <View style={[styles.evaluationScore, { borderColor: ratingColor }]}>
             <Text style={[styles.evaluationScoreText, { color: ratingColor }]}>
               {item.vl_value.toFixed(1)}
             </Text>
           </View>
-
         </View>
-
         {item.ds_comment && (
           <Text style={styles.evaluationComment} numberOfLines={2}>
             "{item.ds_comment}"
           </Text>
         )}
-
         <Text style={[styles.evaluationMethodologyTag, { color: ratingColor }]}>
           Tipo: {evaluationType}
         </Text>
@@ -128,16 +164,11 @@ export default function BeachDetailScreen({ route }: any) {
     );
   }
 
-
   return (
-    // 🚨 1. SafeAreaView com fundo cinza claro para evitar sobreposição 🚨
     <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
       <ScrollView style={styles.container}>
-        {/* 🚨 BOTÃO DE VOLTAR FLUTUANTE 🚨 
-               Posicionado abaixo da barra de status usando o padding do SafeAreaView
-            */}
         <TouchableOpacity
-          style={[styles.backButton, { top: STATUS_BAR_HEIGHT + 10 }]} // Ajuste o 'top'
+          style={[styles.backButton, { top: STATUS_BAR_HEIGHT + 10 }]}
           onPress={() => navigation.goBack()}
         >
           <Icon name="arrow-left" size={24} color={'#333'} />
@@ -163,13 +194,11 @@ export default function BeachDetailScreen({ route }: any) {
             {beach.municipio?.des_name}, {beach.municipio?.estado?.uf}
           </Text>
 
-          {/* Descrição */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Descrição</Text>
             <Text style={styles.description}>{beach.des_description}</Text>
           </View>
 
-          {/* Grid de Informações Chave */}
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Tipo de Praia</Text>
@@ -184,23 +213,48 @@ export default function BeachDetailScreen({ route }: any) {
             )}
 
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Status de Monitoramento</Text>
+              <Text style={styles.infoLabel}>Avaliação Turista ({touristReviews.length})</Text>
+              <Text style={styles.infoValue}>
+                {averageReviewRating > 0 ? averageReviewRating.toFixed(1) : 'S/N'}
+              </Text>
+            </View>
+
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Status</Text>
               <Text style={styles.infoValue}>{beach.status_monitoramento}</Text>
             </View>
 
-            {/* Botão de Avaliar para o Turista (Adicionado) */}
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Sua Contribuição</Text>
-              <TouchableOpacity style={styles.reviewButton}>
-                <Text style={styles.reviewButtonText}>+ Avaliar</Text>
+              <TouchableOpacity
+                style={styles.reviewButton}
+                onPress={() => setIsModalVisible(true)}
+              >
+                <Text style={styles.reviewButtonText}>+ Comentar</Text>
               </TouchableOpacity>
             </View>
+
           </View>
 
-          {/* HISTÓRICO DE AVALIAÇÕES */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              Histórico de Avaliações ({beachEvaluations.length})
+              Avaliações de Turistas ({touristReviews.length})
+            </Text>
+            {touristReviews.length > 0 ? (
+              <FlatList
+                data={touristReviews}
+                renderItem={({ item }) => <BeachReviewCard review={item} />}
+                keyExtractor={(item) => `review-${item.id}`}
+                scrollEnabled={false}
+              />
+            ) : (
+              <Text style={styles.emptyHistoryText}>Nenhum turista avaliou esta praia ainda.</Text>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Histórico Metodológico ({beachEvaluations.length})
             </Text>
             {beachEvaluations.length > 0 ? (
               <FlatList
@@ -210,11 +264,10 @@ export default function BeachDetailScreen({ route }: any) {
                 scrollEnabled={false}
               />
             ) : (
-              <Text style={styles.emptyHistoryText}>Seja o primeiro a avaliar esta praia!</Text>
+              <Text style={styles.emptyHistoryText}>Sem histórico.</Text>
             )}
           </View>
 
-          {/* Cadastrado por (Mantido do original) */}
           {beach.cadastrador && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Cadastrado por</Text>
@@ -223,6 +276,23 @@ export default function BeachDetailScreen({ route }: any) {
           )}
         </View>
       </ScrollView>
+
+      {/* ✅ CORREÇÃO 2: Renderização Condicional - Só desenha se for true */}
+      {isModalVisible && (
+        <BeachReviewModal
+          beachId={beachId}
+          beachName={beach.des_name}
+          isVisible={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+          onReviewSubmitted={() => {
+            setIsModalVisible(false);
+            fetchBeachReviews();
+          }}
+          isAuthenticated={isAuthenticated}
+          authToken={authToken}
+          API_URL={API_URL}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -237,7 +307,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // 🚨 NOVO ESTILO: Botão de Voltar 🚨
   backButton: {
     position: 'absolute',
     left: 15,
@@ -335,7 +404,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
-  // ESTILOS DE HISTÓRICO DE AVALIAÇÃO
   evaluationCard: {
     backgroundColor: '#fff',
     padding: 15,

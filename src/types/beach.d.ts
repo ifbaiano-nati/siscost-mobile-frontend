@@ -89,3 +89,27 @@ export interface IBeachEvaluation {
   };
 }
 
+export interface IReviewUser {
+  id: number;
+  name: string;
+}
+
+// 🚨 NOVO TIPO: Avaliação de Turista (BeachReview) 🚨
+export interface IBeachReview {
+  id: number;
+  beach_id: number;
+  user_id: number;
+  comment_text: string;
+  rating: number | null; // Nota de 1 a 5
+  is_approved: boolean;
+  created_at: string;
+  updated_at: string;
+  user: IReviewUser | null;
+}
+
+// 🚨 NOVO TIPO: Payload para envio 🚨
+export interface IReviewSubmission {
+  beach_id: number;
+  comment_text: string;
+  rating?: number;
+}

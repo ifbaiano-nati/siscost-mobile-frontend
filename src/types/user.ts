@@ -14,6 +14,7 @@ export interface User {
   name: string;
   email: string;
   institution?: string;
+  profile_id?: number;
   user_profile?: {
     profile: {
       id: number;
